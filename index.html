@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giới Thiệu Token PCcoin (PCC)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #8247e5; /* Màu tím đặc trưng của Polygon */
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        header p {
+            font-size: 1.2em;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        section {
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #8247e5;
+            border-bottom: 2px solid #8247e5;
+            padding-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .info-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #8247e5;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #6a38c2;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+            margin-top: 40px;
+        }
+        /* Sửa lỗi tràn text */
+        p, strong {
+            word-break: break-all;         /* Buộc break chuỗi dài */
+            overflow-wrap: anywhere;       /* Hỗ trợ tốt hơn */
+            word-wrap: break-word;         /* Tương thích cũ */
+        }
+        /* Đảm bảo trong info-card cũng không tràn */
+        .info-card p {
+            word-break: break-all;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>PCcoin (PCC)</h1>
+        <p>Token ERC-20 trên mạng Polygon</p>
+    </header>
+
+    <div class="container">
+        <section>
+            <h2>Giới thiệu</h2>
+            <p>PCcoin (PCC) là một token ERC-20 được triển khai trên blockchain Polygon. Đây là một token cộng đồng với địa chỉ contract: <strong>0x648b6175992ffb99fbea05f53a21550c7afe7984</strong>.</p>
+            <p>Token này hiện có khối lượng giao dịch và thanh khoản thấp, cho thấy đây có thể là một dự án nhỏ hoặc mới. Hãy luôn kiểm tra kỹ và thực hiện nghiên cứu cá nhân (DYOR) trước khi đầu tư.</p>
+        </section>
+
+        <section>
+            <h2>Thông tin cơ bản</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Tên Token</h3>
+                    <p>PCcoin</p>
+                </div>
+                <div class="info-card">
+                    <h3>Ký hiệu</h3>
+                    <p>PCC</p>
+                </div>
+                <div class="info-card">
+                    <h3>Mạng lưới</h3>
+                    <p>Polygon (PoS)</p>
+                </div>
+                <div class="info-card">
+                    <h3>Địa chỉ Contract</h3>
+                    <p>0x648b6175992ffb99fbea05f53a21550c7afe7984</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Liên kết hữu ích</h2>
+            <p style="text-align: center;">
+                <a href="https://dex.coinmarketcap.com/token/polygon/0x648b6175992ffb99fbea05f53a21550c7afe7984/" class="btn" target="_blank">Xem trên CoinMarketCap DEX</a>
+                <a href="https://polygonscan.com/address/0x648b6175992ffb99fbea05f53a21550c7afe7984" class="btn" target="_blank">Xem Contract trên PolygonScan</a>
+            </p>
+            <p style="text-align: center; font-style: italic;">Bạn có thể theo dõi giá, thanh khoản, volume giao dịch và chi tiết contract tại các liên kết trên.</p>
+        </section>
+
+        <section>
+            <h2>Cảnh báo</h2>
+            <p>Thị trường tiền mã hóa có rủi ro cao. Token này hiện có volume và liquidity rất thấp. Hãy cẩn thận với các rủi ro tiềm ẩn như rug pull hoặc thiếu thanh khoản.</p>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 - Trang giới thiệu PCcoin (PCC) trên Polygon</p>
+    </footer>
+</body>
+</html>
