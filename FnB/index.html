@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F&B - Login Email</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .container { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+    h1 { text-align: center; margin-bottom: 24px; color: #333; font-size: 1.6rem; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
+    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+    input:focus { outline: none; border-color: #4CAF50; }
+    button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .btn-login { background: #4CAF50; color: white; }
+    .btn-login:hover { background: #43a047; }
+    .btn-register { background: #2196F3; color: white; }
+    .btn-register:hover { background: #1e88e5; }
+    .btn-logout { background: #f44336; color: white; }
+    .btn-logout:hover { background: #e53935; }
+    .btn-save { background: #ff9800; color: white; }
+    .message { margin-top: 16px; padding: 12px; border-radius: 8px; text-align: center; font-size: 0.95rem; display: none; }
+    .error { background: #ffebee; color: #c62828; }
+    .success { background: #e8f5e9; color: #2e7d32; }
+    #app-section { display: none; }
+    .history-item { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #4CAF50; }
+    .history-item strong { color: #333; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== PHẦN LOGIN / ĐĂNG KÝ ===== -->
+  <div class="container" id="auth-section">
+    <h1>F&B Login</h1>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="you@example.com" required />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Mật khẩu</label>
+      <input type="password" id="password" placeholder="Tối thiểu 6 ký tự" required />
+    </div>
+
+    <button class="btn-login" onclick="login()">Đăng nhập</button>
+    <button class="btn-register" onclick="register()">Đăng ký tài khoản</button>
+
+    <div id="auth-message" class="message"></div>
+  </div>
+
+  <!-- ===== PHẦN SAU KHI LOGIN ===== -->
+  <div class="container" id="app-section">
+    <h1>Xin chào, <span id="user-email"></span></h1>
+    <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+
+    <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+
+    <h2 style="margin-bottom: 16px; font-size: 1.2rem;">Lưu lịch sử F&B</h2>
+    <div class="form-group">
+      <label>Ghi chú / Tên đơn</label>
+      <input type="text" id="note" placeholder="Ví dụ: Đơn mang về" />
+    </div>
+    <div class="form-group">
+      <label>Tổng tiền</label>
+      <input type="number" id="total" placeholder="70000" />
+    </div>
+    <button class="btn-save" onclick="saveHistory()">Lưu lịch sử</button>
+
+    <div id="save-message" class="message"></div>
+
+    <h2 style="margin: 28px 0 16px; font-size: 1.2rem;">Lịch sử gần đây</h2>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, push, set, serverTimestamp, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ===== CẤU HÌNH FIREBASE CỦA BẠN =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7HE94M-w9chHikRLxlAKMeYsR_71GBpc",
+      authDomain: "fbamthucdouong.firebaseapp.com",
+      databaseURL: "https://fbamthucdouong-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "fbamthucdouong",
+      storageBucket: "fbamthucdouong.firebasestorage.app",
+      messagingSenderId: "399700364963",
+      appId: "1:399700364963:web:9e200dbce457822fb7b916"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // ===== HIỂN THỊ THÔNG BÁO =====
+    function showMessage(elementId, text, isError = false) {
+      const el = document.getElementById(elementId);
+      el.style.display = "block";
+      el.textContent = text;
+      el.className = "message " + (isError ? "error" : "success");
+    }
+
+    // ===== ĐĂNG KÝ =====
+    window.register = async function () {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        showMessage("auth-message", "Vui lòng nhập đầy đủ email và mật khẩu", true);
+        return;
+      }
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        showMessage("auth-message", "Đăng ký thành công! Đang chuyển...", false);
+      } catch (error) {
+        showMessage("auth-message", error.message, true);
+      }
+    };
+
+    // ===== ĐĂNG NHẬP =====
+    window.login = async function () {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        showMessage("auth-message", "Vui lòng nhập đầy đủ email và mật khẩu", true);
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMessage("auth-message", "Đăng nhập thành công!", false);
+      } catch (error) {
+        showMessage("auth-message", error.message, true);
+      }
+    };
+
+    // ===== ĐĂNG XUẤT =====
+    window.logout = async function () {
+      await signOut(auth);
+    };
+
+    // ===== LƯU LỊCH SỬ F&B =====
+    window.saveHistory = async function () {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const note = document.getElementById("note").value.trim() || "Không có ghi chú";
+      const total = Number(document.getElementById("total").value) || 0;
+
+      try {
+        const historyRef = ref(db, `users/${user.uid}/fnbHistory`);
+        const newRef = push(historyRef);
+
+        await set(newRef, {
+          id: newRef.key,
+          note: note,
+          total: total,
+          createdAt: serverTimestamp(),
+          items: [] // bạn có thể thêm mảng món ăn sau
+        });
+
+        showMessage("save-message", "Đã lưu lịch sử thành công!", false);
+        document.getElementById("note").value = "";
+        document.getElementById("total").value = "";
+      } catch (error) {
+        showMessage("save-message", "Lỗi: " + error.message, true);
+      }
+    };
+
+    // ===== LẮNG NGHE TRẠNG THÁI ĐĂNG NHẬP =====
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Đã login
+        document.getElementById("auth-section").style.display = "none";
+        document.getElementById("app-section").style.display = "block";
+        document.getElementById("user-email").textContent = user.email;
+
+        // Load lịch sử
+        loadHistory(user.uid);
+      } else {
+        // Chưa login
+        document.getElementById("auth-section").style.display = "block";
+        document.getElementById("app-section").style.display = "none";
+      }
+    });
+
+    // ===== LOAD LỊCH SỬ =====
+    function loadHistory(uid) {
+      const historyRef = query(
+        ref(db, `users/${uid}/fnbHistory`),
+        orderByChild("createdAt"),
+        limitToLast(10)
+      );
+
+      onValue(historyRef, (snapshot) => {
+        const listEl = document.getElementById("history-list");
+        listEl.innerHTML = "";
+
+        if (!snapshot.exists()) {
+          listEl.innerHTML = "<p style='color:#888'>Chưa có lịch sử nào.</p>";
+          return;
+        }
+
+        const data = snapshot.val();
+        const items = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        items.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "history-item";
+          const time = item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "—";
+          div.innerHTML = `
+            <strong>${item.note || "Không ghi chú"}</strong><br/>
+            Tổng: <b>${item.total?.toLocaleString("vi-VN") || 0} đ</b><br/>
+            <small style="color:#666">${time}</small>
+          `;
+          listEl.appendChild(div);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
