@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>F&B - Login Email</title>
+  <title>F&B</title>
+  
+  <!-- Favicon (Icon ly nước F&B) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥤</text></svg>">
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-    .container { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+    .container { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 460px; }
     h1 { text-align: center; margin-bottom: 24px; color: #333; font-size: 1.6rem; }
     .form-group { margin-bottom: 16px; }
     label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
@@ -27,6 +31,10 @@
     #app-section { display: none; }
     .history-item { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #4CAF50; }
     .history-item strong { color: #333; }
+    
+    /* Style cho bộ lọc ngày & tổng doanh thu */
+    .filter-box { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #c8e6c9; }
+    .daily-summary { font-weight: bold; color: #2e7d32; margin-top: 8px; font-size: 1.05rem; }
   </style>
 </head>
 <body>
@@ -64,14 +72,26 @@
       <input type="text" id="note" placeholder="Ví dụ: Đơn mang về" />
     </div>
     <div class="form-group">
-      <label>Tổng tiền</label>
+      <label>Tổng tiền (VNĐ)</label>
       <input type="number" id="total" placeholder="70000" />
     </div>
     <button class="btn-save" onclick="saveHistory()">Lưu lịch sử</button>
 
     <div id="save-message" class="message"></div>
 
-    <h2 style="margin: 28px 0 16px; font-size: 1.2rem;">Lịch sử gần đây</h2>
+    <h2 style="margin: 28px 0 16px; font-size: 1.2rem;">Lịch sử đơn hàng</h2>
+    
+    <!-- Bộ lọc ngày -->
+    <div class="filter-box">
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="filter-date">Chọn ngày xem:</label>
+        <input type="date" id="filter-date" onchange="onDateChange()" />
+      </div>
+      <div class="daily-summary" id="daily-summary">
+        Tổng doanh thu: 0 đ
+      </div>
+    </div>
+
     <div id="history-list"></div>
   </div>
 
@@ -79,9 +99,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getDatabase, ref, push, set, serverTimestamp, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, push, set, serverTimestamp, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // ===== CẤU HÌNH FIREBASE CỦA BẠN =====
+    // ===== CẤU HÌNH FIREBASE =====
     const firebaseConfig = {
       apiKey: "AIzaSyC7HE94M-w9chHikRLxlAKMeYsR_71GBpc",
       authDomain: "fbamthucdouong.firebaseapp.com",
@@ -95,6 +115,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+
+    // Mặc định thiết lập input date là ngày hôm nay (YYYY-MM-DD)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("filter-date").value = today;
 
     // ===== HIỂN THỊ THÔNG BÁO =====
     function showMessage(elementId, text, isError = false) {
@@ -116,7 +140,7 @@
 
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-        showMessage("auth-message", "Đăng ký thành công! Đang chuyển...", false);
+        showMessage("auth-message", "Đăng ký thành công!", false);
       } catch (error) {
         showMessage("auth-message", error.message, true);
       }
@@ -162,7 +186,7 @@
           note: note,
           total: total,
           createdAt: serverTimestamp(),
-          items: [] // bạn có thể thêm mảng món ăn sau
+          items: []
         });
 
         showMessage("save-message", "Đã lưu lịch sử thành công!", false);
@@ -173,54 +197,88 @@
       }
     };
 
+    // ===== XỬ LÝ KHI THAY ĐỔI NGÀY XEM =====
+    window.onDateChange = function() {
+      if (auth.currentUser) {
+        loadHistoryByDate(auth.currentUser.uid);
+      }
+    };
+
     // ===== LẮNG NGHE TRẠNG THÁI ĐĂNG NHẬP =====
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Đã login
         document.getElementById("auth-section").style.display = "none";
         document.getElementById("app-section").style.display = "block";
         document.getElementById("user-email").textContent = user.email;
 
-        // Load lịch sử
-        loadHistory(user.uid);
+        loadHistoryByDate(user.uid);
       } else {
-        // Chưa login
         document.getElementById("auth-section").style.display = "block";
         document.getElementById("app-section").style.display = "none";
       }
     });
 
-    // ===== LOAD LỊCH SỬ =====
-    function loadHistory(uid) {
+    // ===== LOAD LỊCH SỬ THEO NGÀY =====
+    function loadHistoryByDate(uid) {
+      const selectedDate = document.getElementById("filter-date").value; // Format: YYYY-MM-DD
       const historyRef = query(
         ref(db, `users/${uid}/fnbHistory`),
-        orderByChild("createdAt"),
-        limitToLast(10)
+        orderByChild("createdAt")
       );
 
       onValue(historyRef, (snapshot) => {
         const listEl = document.getElementById("history-list");
+        const summaryEl = document.getElementById("daily-summary");
         listEl.innerHTML = "";
 
         if (!snapshot.exists()) {
           listEl.innerHTML = "<p style='color:#888'>Chưa có lịch sử nào.</p>";
+          summaryEl.textContent = "Tổng doanh thu: 0 đ";
           return;
         }
 
         const data = snapshot.val();
-        const items = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        let totalRevenue = 0;
+        let count = 0;
+
+        // Chuyển đổi object thành array và lọc theo ngày được chọn
+        const items = Object.values(data)
+          .filter(item => {
+            if (!item.createdAt) return false;
+            const dateObj = new Date(item.createdAt);
+            
+            // Lấy chuỗi YYYY-MM-DD theo giờ địa phương
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const itemDateStr = `${year}-${month}-${day}`;
+
+            return itemDateStr === selectedDate;
+          })
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        if (items.length === 0) {
+          listEl.innerHTML = `<p style='color:#888'>Không có đơn hàng nào trong ngày ${selectedDate}.</p>`;
+          summaryEl.textContent = "Tổng doanh thu: 0 đ";
+          return;
+        }
 
         items.forEach(item => {
+          totalRevenue += item.total || 0;
+          count++;
+
           const div = document.createElement("div");
           div.className = "history-item";
-          const time = item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "—";
+          const time = item.createdAt ? new Date(item.createdAt).toLocaleTimeString("vi-VN") : "—";
           div.innerHTML = `
             <strong>${item.note || "Không ghi chú"}</strong><br/>
             Tổng: <b>${item.total?.toLocaleString("vi-VN") || 0} đ</b><br/>
-            <small style="color:#666">${time}</small>
+            <small style="color:#666">Giờ tạo: ${time}</small>
           `;
           listEl.appendChild(div);
         });
+
+        summaryEl.textContent = `Tổng ngày (${count} đơn): ${totalRevenue.toLocaleString("vi-VN")} đ`;
       });
     }
   </script>
